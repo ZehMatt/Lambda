@@ -6,7 +6,9 @@ local MAPSCRIPT = {}
 MAPSCRIPT.PlayersLocked = false
 MAPSCRIPT.DefaultLoadout =
 {
-    Weapons = {},
+    Weapons = {
+        "weapon_lambda_hands",
+    },
     Ammo = {},
     Armor = 30,
     HEV = false,
@@ -16,10 +18,30 @@ MAPSCRIPT.InputFilters =
 {
 }
 
+MAPSCRIPT.EntityFilterByName =
+{
+    ["terminal_side_police_goal"] = true,
+}
+
+MAPSCRIPT.EntityFilterByClass =
+{
+    ["env_global"] = true,
+}
+
 MAPSCRIPT.GlobalStates =
 {
-    ["gordon_precriminal"] = GLOBAL_ON,
-    ["gordon_invulnerable"] = GLOBAL_ON,
+    ["gordon_precriminal"] = GLOBAL_OFF,
+    ["gordon_invulnerable"] = GLOBAL_OFF,
+    ["super_phys_gun"] = GLOBAL_OFF,
+    ["antlion_allied"] = GLOBAL_OFF,
+}
+
+MAPSCRIPT.EntityRelationships =
+{
+    { Class1 = "npc_metropolice", Class2 = "player", Relation = D_NU, Rank = 99 },
+    { Class1 = "npc_cscanner", Class2 = "player", Relation = D_NU, Rank = 99 },
+    { Class1 = "npc_metropolice", Class2 = "npc_citizen", Relation = D_LI, Rank = 99 },
+    { Class1 = "npc_strider", Class2 = "npc_citizen", Relation = D_LI, Rank = 99 },
 }
 
 function MAPSCRIPT:Init()
@@ -107,85 +129,6 @@ function MAPSCRIPT:PostInit()
                 end
 
             end
-
-        end)
-
-        GAMEMODE:WaitForInput("cupcop_nag_timer", "Enable", function()
-            do
-                return
-            end
-            DbgPrint("Starting to nag the cop")
-
-            util.RunDelayed(function()
-
-                cupcop_can:SetModel("models/gibs/hgibs.mdl")
-                cupcop_can:Ignite(999999)
-
-                hook.Add("Think", "CupCopRevenge", function()
-
-                    if not IsValid(cupcop) or not IsValid(cupcop_can) then
-                        DbgPrint("Not valid, removing hook")
-                        hook.Remove("Think", "CupCopRevenge")
-                        return
-                    end
-
-                    local phys = cupcop_can:GetPhysicsObject()
-                    if not IsValid(phys) then
-                        DbgPrint("Not valid, removing hook")
-                        hook.Remove("Think", "CupCopRevenge")
-                        return
-                    end
-
-                    local cupcopFwd = cupcop:EyeAngles():Forward()
-                    local cupcopPos = cupcop:EyePos() + (cupcopFwd * 50)
-
-                    local dist = cupcop:EyePos():Distance(cupcop_can:GetPos())
-                    local power = dist * 0.8
-
-                    local vecDir = cupcopPos - cupcop_can:GetPos()
-                    local vecLookDir = cupcop:GetPos() - cupcop_can:GetPos()
-                    local ang = vecDir:Angle()
-                    local angLook = vecLookDir:Angle()
-                    local angFwd = ang:Forward()
-                    local vel = angFwd * (Vector(1, 1, 1) * power)
-                    local minDistance = 150
-
-                    --DbgPrint("Power: " .. tostring(power))
-                    cupcop.LastAction = cupcop.LastAction or 0
-                    if dist < minDistance and CurTime() - cupcop.LastAction >= 5 then
-
-                        cupcop.LastAction = CurTime()
-
-                        if cupcop:IsCurrentSchedule(SCHED_COWER) == false then
-
-                            local cops = {}
-                            for _,v in pairs(ents.FindByClass("npc_metropolice")) do
-                                if v ~= cupcop then
-                                    table.insert(cops, v)
-                                end
-                            end
-
-                            local cupcopRunPos = table.Random(cops):GetPos()
-
-                            cupcop:SetLastPosition(cupcopRunPos)
-                            cupcop:SetSchedule(SCHED_FORCED_GO_RUN)
-
-                            cupcop.LastTalk = cupcop.LastTalk or CurTime() - 2.1
-                            if CurTime() - cupcop.LastTalk >= 2 then
-                                local speech = table.Random(cupcopSpeech)
-                                DbgPrint("EmitSound: " .. tostring(speech))
-                                cupcop:EmitSound(speech)
-                                cupcop.LastTalk = CurTime()
-                            end
-                        end
-
-                    end
-
-                    phys:SetVelocity(vel)
-                    phys:SetAngles(angLook)
-
-                end)
-            end, CurTime() + 4)
 
         end)
 

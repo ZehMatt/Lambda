@@ -47,10 +47,12 @@ if SERVER then
         end
 
         -- First scale hitgroups.
-        local hitgroupScale = self:GetDifficultyNPCHitgroupDamageScale(hitgroup)
-        DbgPrint("Hitgroup Scale", npc, hitgroupScale)
-        dmginfo:ScaleDamage(hitgroupScale)
-
+        if dmginfo:IsDamageType(DMG_DIRECT) == false then
+            local hitgroupScale = self:GetDifficultyNPCHitgroupDamageScale(hitgroup)
+            DbgPrint("Hitgroup Scale", npc, hitgroupScale)
+            dmginfo:ScaleDamage(hitgroupScale)
+        end
+        
         -- Scale by difficulty.
         local scaleType = 0
         if attacker:IsPlayer() == true then
@@ -91,8 +93,9 @@ if SERVER then
             npc:SetSkin(1)
         end
 
-        if self.MapScript.OnRegisterNPC ~= nil then
-            self.MapScript:OnRegisterNPC(npc)
+        local mapscript = self:GetMapScript()
+        if mapscript.OnRegisterNPC ~= nil then
+            mapscript:OnRegisterNPC(npc)
         end
 
         if npc:GetClass() == "npc_alyx" then

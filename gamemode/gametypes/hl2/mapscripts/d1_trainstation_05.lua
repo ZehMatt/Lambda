@@ -6,7 +6,9 @@ local MAPSCRIPT = {}
 MAPSCRIPT.PlayersLocked = false
 MAPSCRIPT.DefaultLoadout =
 {
-    Weapons = {},
+    Weapons = {
+        "weapon_lambda_hands",
+    },
     Ammo = {},
     Armor = 30,
     HEV = false,
@@ -20,7 +22,7 @@ MAPSCRIPT.InputFilters =
 
 MAPSCRIPT.EntityFilterByClass =
 {
-    --["env_global"] = true,
+    ["env_global"] = true,
 }
 
 MAPSCRIPT.EntityFilterByName =
@@ -31,6 +33,14 @@ MAPSCRIPT.EntityFilterByName =
 MAPSCRIPT.ImportantPlayerNPCNames =
 {
     ["lamarr_jumper"] = true,   -- In any case this should restart.
+}
+
+MAPSCRIPT.GlobalStates =
+{
+    ["gordon_precriminal"] = GLOBAL_OFF,
+    ["gordon_invulnerable"] = GLOBAL_OFF,
+    ["super_phys_gun"] = GLOBAL_OFF,
+    ["antlion_allied"] = GLOBAL_OFF,
 }
 
 function MAPSCRIPT:Init()

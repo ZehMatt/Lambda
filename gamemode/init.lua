@@ -136,6 +136,26 @@ local function GetDamageTypeText(dmginfo)
     return text .. " : " .. dmginfo:GetDamageType()
 end
 
+function GM:ResetDamageAccumulator(ply)
+    ply.DamageAccumulator = {}
+end
+
+function GM:SetAggressiveRelationship(attacker, npc, cls)
+    attacker.RelationshipRestore = attacker.RelationshipRestore or {}
+    table.insert(attacker.RelationshipRestore, { Entity = npc, Disposition = npc:Disposition(attacker) })
+    npc:AddEntityRelationship(attacker, D_HT, 99)
+    npc:UpdateEnemyMemory(attacker, attacker:GetPos())
+    if cls == "npc_citizen" then
+        local gender = npc:GetGender()
+        local rand = string.format("%02d", math.random(1, 2))
+        if gender == "male" then
+            npc:EmitSound("vo/npc/male01/wetrustedyou" .. rand .. ".wav")
+        elseif gender == "female" then
+            npc:EmitSound("vo/npc/female01/wetrustedyou" .. rand .. ".wav")
+        end
+    end
+end
+
 function GM:EntityTakeDamage(target, dmginfo)
 
     local DbgPrint = DbgPrintDmg
@@ -165,12 +185,44 @@ function GM:EntityTakeDamage(target, dmginfo)
         local restrictedNPCClasses = self:GetGameTypeData("ImportantPlayerNPCClasses") or {}
         local npcName = target:GetName()
         local isRestricted = restrictedNPCNames[npcName] == true or restrictedNPCClasses[targetClass] == true
-        local attackerIsPlayer = ((IsValid(attacker) and attacker:IsPlayer()) or (IsValid(inflictor) and inflictor:IsPlayer()))
+        local attackerIsPlayer = false
+        local ply = nil
+        if IsValid(attacker) and attacker:IsPlayer() then
+            attackerIsPlayer = true
+            ply = attacker
+        elseif IsValid(inflictor) and inflictor:IsPlayer() then
+            attackerIsPlayer = true
+            ply = inflictor
+        end
+
         -- Check if player is attacking friendlies.
         if attackerIsPlayer == true and isRestricted == true and self:GetSetting("allow_npcdmg") == false then
             DbgPrint("Filtering damage on restricted NPC")
             dmginfo:ScaleDamage(0)
             return true
+        end
+
+        if isRestricted == false and target:Disposition(attacker) ~= D_HT then
+
+            attacker.DamageAccumulator = attacker.DamageAccumulator or {}
+
+            local cls = target:GetClass()
+            local currentDmgAmount = attacker.DamageAccumulator[target] or 0
+            if IsFriendEntityName(cls) then
+                -- Have to be half of the HP of citizens
+                if currentDmgAmount >= (target:GetMaxHealth() / 2) then
+                    self:SetAggressiveRelationship(attacker, target, cls)
+                else
+                    currentDmgAmount = currentDmgAmount + dmginfo:GetDamage()
+                    attacker.DamageAccumulator[target] = currentDmgAmount
+                end
+            else
+                local classEnts = ents.FindByClass(cls)
+                for _,v in pairs(classEnts) do
+                    self:SetAggressiveRelationship(attacker, v, cls)
+                end
+            end
+
         end
 
     elseif target:IsPlayer() then

@@ -8,6 +8,7 @@ MAPSCRIPT.DefaultLoadout =
 {
     Weapons =
     {
+        "weapon_lambda_hands",
         "weapon_lambda_medkit",
         "weapon_crowbar",
         "weapon_pistol",
@@ -37,18 +38,11 @@ MAPSCRIPT.DefaultLoadout =
     HEV = true,
 }
 
-MAPSCRIPT.InputFilters =
-{
-}
-
-MAPSCRIPT.EntityFilterByClass =
-{
-    --["env_global"] = true,
-}
-
 MAPSCRIPT.EntityFilterByName =
 {
-    --["pclip_gate1"] = true,
+    ["global_newgame_template_base_items"] = true,
+    ["global_newgame_template_local_items"] = true,
+    ["global_newgame_template_ammo"] = true,
 }
 
 function MAPSCRIPT:Init()

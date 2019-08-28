@@ -6,7 +6,9 @@ local MAPSCRIPT = {}
 MAPSCRIPT.PlayersLocked = false
 MAPSCRIPT.DefaultLoadout =
 {
-    Weapons = {},
+    Weapons = {
+        "weapon_lambda_hands",
+    },
     Ammo = {},
     Armor = 30,
     HEV = false,
@@ -15,6 +17,11 @@ MAPSCRIPT.DefaultLoadout =
 MAPSCRIPT.InputFilters =
 {
     --["relay_rush_downstairscops"] = { "Trigger" },
+}
+
+MAPSCRIPT.EntityFilterByClass =
+{
+    ["env_global"] = true,
 }
 
 MAPSCRIPT.EntityFilterByClass =
@@ -30,8 +37,18 @@ MAPSCRIPT.EntityFilterByName =
 
 MAPSCRIPT.GlobalStates =
 {
-    ["gordon_precriminal"] = GLOBAL_ON,
-    ["gordon_invulnerable"] = GLOBAL_ON,
+    ["gordon_precriminal"] = GLOBAL_OFF,
+    ["gordon_invulnerable"] = GLOBAL_OFF,
+    ["super_phys_gun"] = GLOBAL_OFF,
+    ["antlion_allied"] = GLOBAL_OFF,
+}
+
+MAPSCRIPT.EntityRelationships =
+{
+    { Class1 = "npc_metropolice", Class2 = "player", Relation = D_NU, Rank = 99 },
+    { Class1 = "npc_cscanner", Class2 = "player", Relation = D_NU, Rank = 99 },
+    { Class1 = "npc_metropolice", Class2 = "npc_citizen", Relation = D_LI, Rank = 99 },
+    { Class1 = "npc_strider", Class2 = "npc_citizen", Relation = D_LI, Rank = 99 },
 }
 
 function MAPSCRIPT:Init()
@@ -41,6 +58,12 @@ function MAPSCRIPT:PostInit()
 
     if SERVER then
         
+        -- Don't drop weapons.
+        for _,v in pairs(ents.FindByClass("npc_metropolice")) do
+            local flags = bit.bor(v:GetSpawnFlags(), 8192)
+            v:SetKeyValue("spawnflags", tostring(flags))
+        end
+
         -- FIX: The cop would stand there annoying players that have not yet passed through.
         GAMEMODE:WaitForInput("brush_breakin_blockplayer1", "Kill", function()
             ents.WaitForEntityByName("npc_breakincop3", function(ent) ent:SetName("lambda_npc_breakincop3") DbgPrint("Changed name") end)
@@ -53,15 +76,15 @@ function MAPSCRIPT:PostInit()
 
         local lcs_cit_RaidAnticipation
         ents.WaitForEntityByName("lcs_cit_RaidAnticipation", function(ent)
-            ent:Fire("AddOutput", "OnCompletion !self,Start")
-            ent:SetKeyValue("busyactor", "0")
-            lcs_cit_RaidAnticipation = ent
+            --ent:Fire("AddOutput", "OnCompletion !self,Start")
+            --ent:SetKeyValue("busyactor", "0")
+            --lcs_cit_RaidAnticipation = ent
         end)
 
         GAMEMODE:WaitForInput("trigger_rush_start", "Enable", function()
-            DbgPrint("Preventing police rush")
-            lcs_cit_RaidAnticipation:Fire("Start")
-            return true
+            --DbgPrint("Preventing police rush")
+            --lcs_cit_RaidAnticipation:Fire("Start")
+            --return true
         end)
 
         ents.WaitForEntityByName("attic_door_close_relay", function(ent)
@@ -134,12 +157,6 @@ function MAPSCRIPT:PostInit()
         })
 
     end
-
-end
-
-function MAPSCRIPT:PostPlayerSpawn(ply)
-
-    --DbgPrint("PostPlayerSpawn")
 
 end
 

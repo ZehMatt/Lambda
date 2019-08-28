@@ -6,7 +6,9 @@ local MAPSCRIPT = {}
 MAPSCRIPT.PlayersLocked = false
 MAPSCRIPT.DefaultLoadout =
 {
-    Weapons = {},
+    Weapons = {
+        "weapon_lambda_hands",
+    },
     Ammo = {},
     Armor = 30,
     HEV = false,
@@ -14,10 +16,16 @@ MAPSCRIPT.DefaultLoadout =
 
 MAPSCRIPT.EntityFilterByClass =
 {
+    ["env_global"] = true,
 }
 
 MAPSCRIPT.EntityFilterByName =
 {
+}
+
+MAPSCRIPT.ImportantPlayerNPCNames =
+{
+    ["barneyroom_door_cop_1"] = true,
 }
 
 MAPSCRIPT.InputFilters =
@@ -33,9 +41,18 @@ MAPSCRIPT.InputFilters =
 MAPSCRIPT.GlobalStates =
 {
     ["gordon_precriminal"] = GLOBAL_ON,
-    ["gordon_invulnerable"] = GLOBAL_ON,
+    ["gordon_invulnerable"] = GLOBAL_OFF,
     ["super_phys_gun"] = GLOBAL_OFF,
     ["antlion_allied"] = GLOBAL_OFF,
+}
+
+MAPSCRIPT.EntityRelationships =
+{
+    { Class1 = "npc_metropolice", Class2 = "player", Relation = D_NU, Rank = 99 },
+    { Class1 = "npc_cscanner", Class2 = "player", Relation = D_NU, Rank = 99 },
+    { Class1 = "npc_metropolice", Class2 = "npc_citizen", Relation = D_LI, Rank = 99 },
+    { Class1 = "npc_strider", Class2 = "npc_metropolice", Relation = D_LI, Rank = 99 },
+    { Class1 = "npc_strider", Class2 = "npc_citizen", Relation = D_LI, Rank = 99 },
 }
 
 function MAPSCRIPT:Init()
@@ -115,7 +132,7 @@ function MAPSCRIPT:PostInit()
 
         -- Fix point_viewcontrol, affect all players.
         for k,v in pairs(ents.FindByClass("point_viewcontrol")) do
-            v:SetKeyValue("spawnflags", "128") -- SF_CAMERA_PLAYER_MULTIPLAYER_ALL
+            v:SetKeyValue("spawnflags", "132") -- SF_CAMERA_PLAYER_MULTIPLAYER_ALL
         end
 
         -- Make the cop go outside the hallway so other players can still pass by.

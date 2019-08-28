@@ -290,9 +290,15 @@ if SERVER then
 
         local mdls = self:GetAvailablePlayerModels()
         local selection = mdls[playermdl]
-        if selection == nil then
-            DbgPrint("Player " .. tostring(ply) .. " tried to select unknown model: " .. playermdl)
-            selection = mdls["male05"]
+        if selection == nil or ply:IsBot() then
+            if ply:IsBot() == false then
+                DbgPrint("Player " .. tostring(ply) .. " tried to select unknown model: " .. playermdl)
+            end
+            local modelList = {}
+            for k,_ in pairs(mdls) do
+                table.insert(modelList, k)
+            end
+            selection = mdls[modelList[ply:EntIndex() % #modelList]]
         end
 
         local mdl = selection
@@ -661,6 +667,9 @@ if SERVER then
             if self.MapScript.PostPlayerSpawn ~= nil then
                 self.MapScript:PostPlayerSpawn(ply)
             end
+
+            self:ResetPlayerRelationships(ply)
+            self:ResetDamageAccumulator(ply)
 
             -- In case the map script decides to put us in a vehicle lets not do this.
             if useSpawnpoint == true and IsValid(ply:GetVehicle()) == false and IsValid(ply.SelectedSpawnpoint) then
@@ -1041,32 +1050,6 @@ if SERVER then
 
     end
 
-    function GM:LimitPlayerAmmo(ply)
-
-        if self:GetSetting("limit_default_ammo") == false then
-            return
-        end
-
-        local curTime = CurTime()
-
-        ply.LastAmmoCheck = ply.LastAmmoCheck or curTime
-
-        if curTime - ply.LastAmmoCheck < 0.100 then
-            return
-        end
-
-        ply.LastAmmoCheck = curTime
-
-        for k,v in pairs(self.MAX_AMMO_DEF) do
-            local count = ply:GetAmmoCount(k)
-            local maxCount = v:GetInt()
-            if count > maxCount then
-                ply:SetAmmo(maxCount, k)
-            end
-        end
-
-    end
-
     function GM:AllowPlayerPickup( ply, ent )
 
         ply.LastPickupTime = ply.LastPickupTime or 0
@@ -1351,8 +1334,6 @@ function GM:PlayerEndSprinting(ply, mv)
 end
 
 function GM:StartCommand(ply, cmd)
-
-    self:CalculateMovementAccuracy(ply)
 
     if ply:IsPositionLocked() == true then
         local vel = ply:GetVelocity()
@@ -1747,6 +1728,22 @@ function GM:PlayerWeaponTick(ply, mv, ucmd)
 
 end
 
+function GM:LimitPlayerAmmo(ply)
+
+    if self:GetSetting("limit_default_ammo") == false then
+        return
+    end
+
+    for k,v in pairs(self.MAX_AMMO_DEF) do
+        local count = ply:GetAmmoCount(k)
+        local maxCount = v:GetInt()
+        if count > maxCount then
+            ply:SetAmmo(maxCount, k)
+        end
+    end
+
+end
+
 function GM:PlayerTick(ply, mv)
 
     self:UpdateSuit(ply, mv)
@@ -1786,6 +1783,8 @@ function GM:PlayerUpdateSettings(ply)
 end
 
 function GM:PlayerThink(ply)
+
+    self:CalculateMovementAccuracy(ply)
 
     if SERVER then
         local vel = ply:GetVelocity()
@@ -1976,9 +1975,11 @@ function GM:ScalePlayerDamage(ply, hitgroup, dmginfo)
     end
 
     -- First scale hitgroups.
-    local scale = self:GetDifficultyPlayerHitgroupDamageScale(hitgroup)
-    DbgPrint("Hitgroup Scale", npc, scale)
-    dmginfo:ScaleDamage(scale)
+    if dmginfo:IsDamageType(DMG_DIRECT) == false then
+        local scale = self:GetDifficultyPlayerHitgroupDamageScale(hitgroup)
+        DbgPrint("Hitgroup Scale", npc, scale)
+        dmginfo:ScaleDamage(scale)
+    end
 
     -- Scale by difficulty.
     local scaleType = 0
@@ -1989,7 +1990,7 @@ function GM:ScalePlayerDamage(ply, hitgroup, dmginfo)
     end
 
     if scaleType ~= 0 then
-        scale = self:GetDifficultyDamageScale(scaleType)
+        local scale = self:GetDifficultyDamageScale(scaleType)
         if scale ~= nil then
             DbgPrint("Scaling difficulty damage: " .. tostring(scale))
             dmginfo:ScaleDamage(scale)
